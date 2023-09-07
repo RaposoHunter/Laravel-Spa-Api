@@ -1,12 +1,12 @@
-# Building a Laravel SPA API
+# Building a Laravel API with Laravel Sanctum SPA
 
-In this tutorial I'll go through every details need to configure your API using Laravel Sanctum SPA Authorization.
+In this tutorial I'll go through every details needed to configure your API using Laravel Sanctum SPA Authorization.
 
 For a detailed explanation about Laravel Sanctum head [here](https://laravel.com/docs/10.x/sanctum#spa-authentication).
 
 ## Quick notes
 
-SPA authentication require that your API and your SPA share the same top-level domain. For example:
+SPA authentication requires that your API and your SPA share the same top-level domain. For example:
 
 * http://domain.com and http://api.domain.com is a valid setup
 * http://spa.com and http://api.com isn't a valid setup
@@ -57,7 +57,7 @@ After these steps, your project is almost fully configured as an API but you'll 
 
 ## CORS
 
-When dealing with APIs you'll almost always find yourself receiving requests from domains that aren't your own. For example, you may develop an API to translate an specific list of words and you want others to use it. In this case you might receive requests from "https://domain1.com" or "http://domain2.com". In both cases these requests come from domains that probably differ from yours (in this case localhost). By default, browsers block these requests unless your API define a series of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) HTTP-based headers.
+When dealing with APIs you'll almost always find yourself receiving requests from domains that aren't your own. For example, you may develop an API to translate an specific list of words and you want others to use it. In this case you might receive requests from "https://domain1.com" or "http://domain2.com". In both cases these requests come from domains that probably differ from yours (in this case "localhost"). By default, browsers block these requests unless your API define a series of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) HTTP-based headers.
 
 With Laravel Sanctum all this header configuration is abstracted and wrapped inside the *cors.php* configuration file in *config/cors.php*. When you open it you'll find an array with some predefined keys and values. Some keys translate to an analog HTTP header, i.e, *allowed_origins* represents the *Access-Control-Allow-Origin* header responsible for telling the browsers which domains can make requests to your API. In most cases you will surely want everyone to do so and, in such cases, you should use the "*" wildcard. However this is not the case when using Laravel Sanctum SPA authorization.
 
@@ -65,7 +65,7 @@ If you followed the steps thoroughly the *allowed_origins* key should look somet
 
 
 ```php
-'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')],</code>
+'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000')]
 ```
 
 If you SPA isn't using port 3000, you should go to your *.env* file and configure the FRONTEND_URL variable with the correct port as in the following example:
@@ -76,7 +76,7 @@ FRONTEND_URL=http://localhost:5173
 
 ## Maintaining State
 
-After configuring the CORS headers of your application you might try to log in by making a POST request to http://localhost:8000/login from your SPA and will probably receive a 401 HTTP error code from your requests. If you followed the steps from Laravel Sanctum documentation and retrieved the XSRF-TOKEN this means that the SPA isn't actually sharing the session with the API. This is happening because your SPA domain didn't pass Laravel Sanctum's check that validates if the requesting origin should share the session cookie. The validation happens inside <code>\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::fromFrontEnd</code> and basically tests if the referer/origin matches any of the hosts defined inside the *sanctum.stateful* configuration defined in the *sanctum.php* configuration file. To solve it you can either change *sanctum.stateful* directly or simply define a SANCTUM_STATEFUL_DOMAINS variable inside your .env file. This variable must **NOT** contain a trailing slash neither the schema (http://, https://). If your SPA domain is, for example, "https://frontendapp.com:3000" the variable should be set as "frontendapp.com:3000". In my case I'll set it to "localhost:5173"
+After configuring the CORS headers of your application you might try to log in by making a POST request to http://localhost:8000/login from your SPA and will probably receive a 401 HTTP error code from your requests. If you followed the steps from Laravel Sanctum documentation and [retrieved the XSRF-TOKEN](https://laravel.com/docs/10.x/sanctum#csrf-protection) this means that the SPA isn't actually sharing the session with the API. This is happening because your SPA domain didn't pass Laravel Sanctum's check that validates if the requesting origin should share the session cookie. The validation happens inside <code>\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::fromFrontEnd</code> and basically tests if the referer/origin matches any of the hosts defined inside the *sanctum.stateful* configuration defined in the *sanctum.php* configuration file. To solve it you can either change *sanctum.stateful* directly or simply define a SANCTUM_STATEFUL_DOMAINS variable inside your .env file. This variable must **NOT** contain a trailing slash neither the schema (http://, https://). If your SPA domain is, for example, "https://frontendapp.com:3000" the variable should be set as "frontendapp.com:3000". In my case I'll set it to "localhost:5173"
 
 Another thing you should do is set your SESSION_DRIVER and SESSION_DOMAIN environment variables to "cookie" and ".&lt;YOUR_TOP_LEVEL_DOMAIN&gt;". It should look something like this:
 
@@ -88,6 +88,7 @@ SESSION_DOMAIN=.localhost
 
 <small><em>Prepending a "." to your top-level domain you tell Laravel that the session cookie should be shared with any subdomain from you top-level domain</em></small>
 
+### Cookie persistence
 
 If you retry loggin in, you might now encounter another problem where the API redirects you to http://localhost:8000/home. This is happening because, although you didn't share the session cookie, it was set in your browser. You can check it inside the Application Tab in you browsers Dev Tools. After clearing the cookies you should try loggin in one more time.
 
